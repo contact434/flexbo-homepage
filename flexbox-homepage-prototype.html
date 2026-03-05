@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flexbox — Where design meets discipline</title>
+
+<!-- GSAP + Plugins -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+<!-- Google Fonts (closest to Antipasto Pro + Raleway) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&family=Raleway:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+/* ══════════════════════════════════════════
+   DESIGN TOKENS
+   ══════════════════════════════════════════ */
+:root {
+  --charcoal: #333333;
+  --offwhite: #f7f7ee;
+  --linen: #efe7da;
+  --gold: #c1b6a4;
+  --toffee: #a7673b;
+  --grullo: #a8a07f;
+  --burnt: #c54604;
+  --black: #1a1a1a;
+  --white: #ffffff;
+
+  --font-display: 'Josefin Sans', Georgia, serif;
+  --font-body: 'Raleway', 'Helvetica Neue', sans-serif;
+
+  --ease-silk: cubic-bezier(0.25, 0.0, 0.15, 1.0);
+  --ease-drift: cubic-bezier(0.42, 0.0, 0.12, 1.0);
+  --ease-snap: cubic-bezier(0.22, 0.61, 0.36, 1.0);
+}
+
+/* ══════════════════════════════════════════
+   RESET & BASE
+   ══════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: auto;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--charcoal);
+  background: var(--offwhite);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* Grain texture overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+img { display: block; max-width: 100%; height: auto; }
+a { text-decoration: none; color: inherit; }
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+/* ══════════════════════════════════════════
+   UTILITY
+   ══════════════════════════════════════════ */
+.container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 80px;
+}
+@media (max-width: 768px) { .container { padding: 0 20px; } }
+
+.btn-primary {
+  display: inline-block;
+  background: var(--toffee);
+  color: var(--offwhite);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.025em;
+  padding: 16px 40px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: box-shadow 0.3s var(--ease-snap), background 0.3s var(--ease-snap), transform 0.1s;
+}
+.btn-primary:hover {
+  background: #955d35;
+  box-shadow: 0 4px 20px rgba(167,103,59,0.35);
+}
+.btn-primary:active { transform: scale(0.98); }
+
+.btn-secondary {
+  display: inline-block;
+  background: transparent;
+  color: var(--charcoal);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.025em;
+  padding: 15px 39px;
+  border-radius: 4px;
+  border: 1px solid var(--charcoal);
+  cursor: pointer;
+  transition: all 0.3s var(--ease-snap);
+}
+.btn-secondary:hover {
+  background: var(--charcoal);
+  color: var(--offwhite);
+}
+
+/* ══════════════════════════════════════════
+   NAVIGATION
+   ══════════════════════════════════════════ */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 80px;
+  background: rgba(247,247,238,0.0);
+  backdrop-filter: blur(0px);
+  transition: all 0.4s var(--ease-snap);
+}
+.nav.scrolled {
+  height: 60px;
+  background: rgba(247,247,238,0.97);
+  backdrop-filter: blur(8px);
+}
+.nav-logo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.15em;
+  color: var(--offwhite);
+  transition: color 0.4s;
+}
+.nav.scrolled .nav-logo { color: var(--charcoal); }
+.nav-links {
+  display: flex; gap: 32px; list-style: none;
+}
+.nav-links a {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.015em;
+  color: rgba(247,247,238,0.8);
+  position: relative;
+  transition: color 0.3s;
+}
+.nav.scrolled .nav-links a { color: var(--charcoal); }
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px; left: 0;
+  width: 0; height: 1px;
+  background: var(--gold);
+  transition: width 0.3s var(--ease-snap);
+}
+.nav-links a:hover::after { width: 100%; }
+.nav-icons {
+  display: flex; gap: 20px; align-items: center;
+}
+.nav-icons svg {
+  width: 20px; height: 20px;
+  stroke: var(--offwhite);
+  fill: none; stroke-width: 1.5;
+  transition: stroke 0.4s;
+}
+.nav.scrolled .nav-icons svg { stroke: var(--charcoal); }
+
+@media (max-width: 768px) {
+  .nav { padding: 0 20px; }
+  .nav-links { display: none; }
+}
+
+/* ══════════════════════════════════════════
+   SECTION 1: HERO CINEMATIC
+   ══════════════════════════════════════════ */
+.hero {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--black);
+}
+.hero-curtain {
+  position: absolute; inset: 0;
+  background: var(--black);
+  z-index: 30;
+  clip-path: inset(0 50% 0 50%);
+}
+.hero-logo-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 40;
+  opacity: 0;
+}
+.hero-logo-overlay span {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: 0.25em;
+  color: var(--gold);
+}
+.hero-image-wrap {
+  position: absolute; inset: 0;
+  transform: scale(1.05);
+}
+.hero-image {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  /* Placeholder: warm architectural interior gradient */
+  background: linear-gradient(135deg, #d4c5a9 0%, #b8a88a 25%, #a69478 50%, #8d7e68 75%, #706252 100%);
+}
+.hero-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(26,26,26,0.55) 0%, rgba(26,26,26,0.1) 40%, transparent 70%);
+  z-index: 10;
+}
+.hero-content {
+  position: absolute;
+  bottom: 14%; left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 20;
+  width: 90%; max-width: 800px;
+}
+.hero-headline {
+  font-size: clamp(36px, 5vw, 60px);
+  font-weight: 700;
+  color: var(--offwhite);
+  margin-bottom: 16px;
+  opacity: 0;
+}
+.hero-headline .word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(12px);
+}
+.hero-subline {
+  font-family: var(--font-body);
+  font-size: clamp(15px, 1.8vw, 18px);
+  font-weight: 300;
+  color: rgba(247,247,238,0.85);
+  margin-bottom: 32px;
+  opacity: 0;
+}
+.hero .btn-primary {
+  opacity: 0;
+  box-shadow: 0 2px 12px rgba(167,103,59,0.2);
+}
+.hero-scroll-indicator {
+  position: absolute;
+  bottom: 28px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  opacity: 0;
+}
+.hero-scroll-indicator .line {
+  width: 1px; height: 36px;
+  background: var(--gold);
+}
+
+/* ══════════════════════════════════════════
+   SECTION 2: VALUE PROPOSITION
+   ══════════════════════════════════════════ */
+.value-prop {
+  background: var(--offwhite);
+  padding: 120px 0;
+}
+.value-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 48px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+@media (max-width: 768px) {
+  .value-grid { grid-template-columns: 1fr; gap: 40px; text-align: center; }
+}
+.value-item { opacity: 0; transform: translateY(32px); }
+.value-icon {
+  width: 48px; height: 48px;
+  margin-bottom: 20px;
+  color: var(--gold);
+}
+@media (max-width: 768px) { .value-icon { margin: 0 auto 20px; } }
+.value-icon svg { width: 100%; height: 100%; stroke: var(--gold); fill: none; stroke-width: 1.5; }
+.value-item h3 {
+  font-size: 22px;
+  margin-bottom: 12px;
+  color: var(--charcoal);
+}
+.value-item p {
+  font-size: 16px;
+  color: var(--charcoal);
+  line-height: 1.6;
+  max-width: 320px;
+}
+@media (max-width: 768px) { .value-item p { max-width: 100%; } }
+
+/* ══════════════════════════════════════════
+   SECTION 3: HOW IT WORKS
+   ══════════════════════════════════════════ */
+.how-it-works {
+  background: var(--linen);
+  padding: 120px 0;
+}
+.how-header { text-align: center; margin-bottom: 64px; }
+.how-header h2 { font-size: clamp(28px, 3.5vw, 40px); }
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 48px;
+  max-width: 1100px;
+  margin: 0 auto;
+  text-align: center;
+}
+@media (max-width: 768px) { .steps-grid { grid-template-columns: 1fr; } }
+.step { opacity: 0; transform: translateY(32px); position: relative; }
+.step-number {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 80px;
+  color: var(--gold);
+  opacity: 0.15;
+  line-height: 1;
+  margin-bottom: -20px;
+}
+.step-visual {
+  width: 180px; height: 100px;
+  margin: 0 auto 24px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.step-visual-inner {
+  width: 100%; height: 100%;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--toffee) 100%);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.step-visual svg { width: 48px; height: 48px; stroke: var(--offwhite); fill: none; stroke-width: 1.5; }
+.step h3 { font-size: 22px; margin-bottom: 8px; }
+.step p { font-size: 16px; color: var(--charcoal); max-width: 280px; margin: 0 auto; }
+
+/* ══════════════════════════════════════════
+   SECTION 4: PRODUCT REVEAL (PINNED)
+   ══════════════════════════════════════════ */
+.product-reveal {
+  position: relative;
+  height: 100vh;
+  background: var(--offwhite);
+  overflow: hidden;
+}
+.reveal-canvas-area {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.reveal-product {
+  width: 60vw; max-width: 700px;
+  aspect-ratio: 16/10;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+}
+.reveal-bench {
+  width: 100%; height: 100%;
+  position: relative;
+}
+.reveal-bench-base {
+  position: absolute; bottom: 0; left: 5%; right: 5%;
+  height: 45%;
+  background: linear-gradient(180deg, #c8b08a 0%, #b8a078 100%);
+  border-radius: 12px 12px 8px 8px;
+  box-shadow: 0 8px 32px rgba(51,51,51,0.15);
+}
+.reveal-bench-base::after {
+  content: '';
+  position: absolute; bottom: 0; left: 10%; right: 10%; height: 8px;
+  background: var(--gold);
+  border-radius: 0 0 4px 4px;
+}
+.reveal-bench-lid {
+  position: absolute; bottom: 44%; left: 5%; right: 5%;
+  height: 35%;
+  background: linear-gradient(180deg, #d4c0a0 0%, #c8b08a 100%);
+  border-radius: 12px 12px 4px 4px;
+  transform-origin: bottom center;
+  box-shadow: 0 -4px 16px rgba(51,51,51,0.08);
+}
+.reveal-interior {
+  position: absolute; bottom: 5%; left: 10%; right: 10%;
+  height: 38%;
+  opacity: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  align-items: end;
+  padding: 12px;
+}
+.reveal-item {
+  background: rgba(247,247,238,0.9);
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--toffee);
+  opacity: 0;
+  transform: translateY(20px);
+  border: 1px solid rgba(193,182,164,0.3);
+}
+.reveal-item .item-icon {
+  width: 28px; height: 28px;
+  margin: 0 auto 4px;
+  background: var(--gold);
+  border-radius: 50%;
+  opacity: 0.6;
+}
+
+.reveal-text-panel {
+  position: absolute;
+  right: 80px; top: 50%;
+  transform: translateY(-50%);
+  width: 320px;
+  z-index: 10;
+}
+@media (max-width: 1024px) {
+  .reveal-text-panel {
+    right: auto; left: 50%; top: auto; bottom: 40px;
+    transform: translateX(-50%);
+    width: 90%; max-width: 400px;
+    text-align: center;
+  }
+}
+.reveal-phase {
+  position: absolute; top: 0; left: 0; width: 100%;
+  opacity: 0;
+}
+.reveal-phase h3 {
+  font-size: 28px;
+  margin-bottom: 12px;
+  color: var(--charcoal);
+}
+.reveal-phase p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--charcoal);
+}
+
+.reveal-counter {
+  position: absolute;
+  bottom: 60px; left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  opacity: 0;
+  z-index: 10;
+}
+.reveal-counter .number {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 64px;
+  color: var(--toffee);
+}
+.reveal-counter .label {
+  font-size: 16px;
+  color: var(--grullo);
+  margin-top: -8px;
+}
+.reveal-cta {
+  position: absolute;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  z-index: 10;
+}
+
+/* ══════════════════════════════════════════
+   SECTION 5: CRAFTSMANSHIP (MATERIAL ZOOM)
+   ══════════════════════════════════════════ */
+.craftsmanship {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+}
+.craft-image {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 60% 40%, #d4c5a9 0%, #b8a88a 30%, #a08a70 60%, #786850 100%);
+  transform-origin: 60% 40%;
+}
+/* Leather grain texture simulation */
+.craft-image::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 128 128' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  opacity: 0.15;
+}
+.craft-text {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 10;
+  width: 90%; max-width: 600px;
+}
+.craft-phase {
+  position: absolute; top: 0; left: 0; width: 100%;
+  text-align: center;
+  opacity: 0;
+}
+.craft-phase h3 {
+  font-size: clamp(24px, 3vw, 32px);
+  color: var(--offwhite);
+  margin-bottom: 12px;
+  text-shadow: 0 2px 20px rgba(26,26,26,0.3);
+}
+.craft-phase p {
+  font-size: 16px;
+  color: rgba(247,247,238,0.85);
+  text-shadow: 0 1px 10px rgba(26,26,26,0.2);
+}
+
+/* ══════════════════════════════════════════
+   SECTION 6: TESTIMONIALS
+   ══════════════════════════════════════════ */
+.testimonials {
+  background: var(--offwhite);
+  padding: 120px 0;
+  text-align: center;
+}
+.testimonial-quote {
+  max-width: 700px;
+  margin: 0 auto;
+  opacity: 0;
+}
+.testimonial-mark {
+  font-family: var(--font-display);
+  font-size: 64px;
+  color: var(--gold);
+  opacity: 0.2;
+  line-height: 0.5;
+  margin-bottom: 24px;
+}
+.testimonial-text {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(22px, 2.5vw, 28px);
+  line-height: 1.4;
+  color: var(--charcoal);
+  margin-bottom: 24px;
+}
+.testimonial-author {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--charcoal);
+}
+.testimonial-context {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--grullo);
+}
+
+/* ══════════════════════════════════════════
+   SECTION 7: COLLECTION SPLIT
+   ══════════════════════════════════════════ */
+.collection-split {
+  display: flex;
+  height: 80vh;
+  min-height: 500px;
+  overflow: hidden;
+}
+.collection-side {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 40px;
+  cursor: pointer;
+  transition: flex 0.5s var(--ease-snap);
+  overflow: hidden;
+}
+.collection-side.daybreak { background: var(--linen); }
+.collection-side.midnight { background: var(--charcoal); }
+
+.collection-divider {
+  width: 1px;
+  background: var(--gold);
+  z-index: 5;
+}
+
+.collection-product {
+  width: 260px; height: 160px;
+  border-radius: 12px;
+  margin-bottom: 32px;
+  transition: transform 0.5s var(--ease-snap);
+  overflow: hidden;
+}
+.daybreak .collection-product {
+  background: linear-gradient(135deg, #d4c0a0 0%, #c8b08a 50%, #b8a078 100%);
+  box-shadow: 0 8px 32px rgba(51,51,51,0.1);
+}
+.midnight .collection-product {
+  background: linear-gradient(135deg, #4a4a4a 0%, #333333 50%, #1a1a1a 100%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.collection-name {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  transition: opacity 0.3s;
+}
+.daybreak .collection-name { color: var(--charcoal); }
+.midnight .collection-name { color: var(--offwhite); }
+.collection-tagline {
+  font-size: 14px;
+  margin-bottom: 24px;
+  transition: opacity 0.3s;
+}
+.daybreak .collection-tagline { color: var(--grullo); }
+.midnight .collection-tagline { color: rgba(247,247,238,0.6); }
+.collection-cta {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.025em;
+  padding-bottom: 2px;
+  border-bottom: 1px solid;
+  transition: all 0.3s;
+}
+.daybreak .collection-cta { color: var(--toffee); border-color: var(--toffee); }
+.midnight .collection-cta { color: var(--gold); border-color: var(--gold); }
+
+@media (max-width: 768px) {
+  .collection-split { flex-direction: column; height: auto; }
+  .collection-side { min-height: 350px; }
+  .collection-divider { width: 100%; height: 1px; }
+}
+
+/* ══════════════════════════════════════════
+   SECTION 8: APP SHOWCASE
+   ══════════════════════════════════════════ */
+.app-showcase {
+  background: var(--charcoal);
+  padding: 120px 0;
+  overflow: hidden;
+}
+.app-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+@media (max-width: 768px) { .app-grid { grid-template-columns: 1fr; gap: 48px; } }
+.app-mockup {
+  width: 100%; max-width: 280px;
+  aspect-ratio: 9/19;
+  background: var(--black);
+  border-radius: 32px;
+  border: 2px solid rgba(247,247,238,0.1);
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+  opacity: 0;
+}
+.app-mockup-screen {
+  position: absolute;
+  inset: 12px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, var(--toffee) 0%, #8a5630 50%, var(--charcoal) 100%);
+  overflow: hidden;
+}
+.app-mockup-ui {
+  padding: 24px 16px;
+  color: var(--offwhite);
+}
+.app-mockup-ui .app-logo {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  margin-bottom: 24px;
+  opacity: 0.8;
+}
+.app-mockup-ui .app-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.app-mockup-ui .app-subtitle {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-bottom: 20px;
+}
+.app-mockup-ui .app-cards {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.app-card-mini {
+  background: rgba(247,247,238,0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 11px;
+  display: flex; justify-content: space-between;
+}
+
+.app-info { opacity: 0; }
+.app-info h2 {
+  font-size: clamp(28px, 3vw, 40px);
+  color: var(--offwhite);
+  margin-bottom: 20px;
+}
+.app-info p {
+  font-size: 16px;
+  color: rgba(247,247,238,0.75);
+  line-height: 1.7;
+  margin-bottom: 32px;
+}
+.app-features {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  margin-bottom: 32px;
+}
+.app-feature {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; color: var(--gold);
+}
+.app-feature::before {
+  content: '';
+  width: 6px; height: 6px;
+  background: var(--gold);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.app-badges { display: flex; gap: 12px; }
+.app-badge {
+  background: rgba(247,247,238,0.1);
+  border: 1px solid rgba(247,247,238,0.2);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--offwhite);
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+.app-badge:hover { opacity: 1; }
+
+/* ══════════════════════════════════════════
+   SECTION 9: FINAL CTA
+   ══════════════════════════════════════════ */
+.final-cta {
+  background: var(--offwhite);
+  padding: 120px 0;
+  text-align: center;
+}
+.final-product-image {
+  width: 400px; max-width: 80%;
+  aspect-ratio: 16/9;
+  margin: 0 auto 48px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--linen) 0%, #d4c5a9 50%, #c8b08a 100%);
+  box-shadow: 0 16px 48px rgba(51,51,51,0.08);
+  opacity: 0;
+}
+.final-cta h2 {
+  font-size: clamp(28px, 3.5vw, 40px);
+  margin-bottom: 16px;
+  opacity: 0;
+}
+.final-cta .subline {
+  font-size: 18px;
+  color: var(--grullo);
+  margin-bottom: 32px;
+  opacity: 0;
+}
+.final-cta .btn-primary { opacity: 0; }
+.reassurance-badges {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 48px;
+  flex-wrap: wrap;
+}
+.badge-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--grullo);
+  opacity: 0;
+}
+.badge-item svg {
+  width: 20px; height: 20px;
+  stroke: var(--gold); fill: none; stroke-width: 1.5;
+}
+
+/* ══════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════ */
+.footer {
+  background: var(--charcoal);
+  padding: 80px 80px 40px;
+  color: var(--offwhite);
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 48px;
+  margin-bottom: 64px;
+}
+@media (max-width: 768px) {
+  .footer { padding: 48px 20px 32px; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+}
+.footer-col h4 {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--gold);
+}
+.footer-col a {
+  display: block;
+  font-size: 14px;
+  color: rgba(247,247,238,0.6);
+  margin-bottom: 12px;
+  transition: color 0.3s;
+}
+.footer-col a:hover { color: var(--gold); }
+.footer-bottom {
+  border-top: 1px solid rgba(247,247,238,0.1);
+  padding-top: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: rgba(247,247,238,0.4);
+}
+
+/* ══════════════════════════════════════════
+   PROGRESS INDICATOR
+   ══════════════════════════════════════════ */
+.progress-indicator {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+.progress-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: 0.3;
+  transition: all 0.3s var(--ease-snap);
+  cursor: pointer;
+}
+.progress-dot.active {
+  opacity: 1;
+  transform: scale(1.5);
+}
+@media (max-width: 768px) { .progress-indicator { display: none; } }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ NAVIGATION ══════════ -->
+<nav class="nav" id="nav">
+  <a href="#" class="nav-logo">FLEXBOX</a>
+  <ul class="nav-links">
+    <li><a href="#">Collection</a></li>
+    <li><a href="#">Experience</a></li>
+    <li><a href="#">Our story</a></li>
+    <li><a href="#">Hospitality</a></li>
+    <li><a href="#">Journal</a></li>
+  </ul>
+  <div class="nav-icons">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+  </div>
+</nav>
+
+<!-- ══════════ PROGRESS INDICATOR ══════════ -->
+<div class="progress-indicator" id="progress">
+  <div class="progress-dot active" data-section="0"></div>
+  <div class="progress-dot" data-section="1"></div>
+  <div class="progress-dot" data-section="2"></div>
+  <div class="progress-dot" data-section="3"></div>
+  <div class="progress-dot" data-section="4"></div>
+  <div class="progress-dot" data-section="5"></div>
+</div>
+
+<!-- ══════════ HERO CINEMATIC ══════════ -->
+<section class="hero" id="hero">
+  <div class="hero-curtain" id="heroCurtain"></div>
+  <div class="hero-logo-overlay" id="heroLogo"><span>FLEXBOX</span></div>
+  <div class="hero-image-wrap" id="heroImageWrap">
+    <div class="hero-image"></div>
+  </div>
+  <div class="hero-overlay" id="heroOverlay"></div>
+  <div class="hero-content">
+    <h1 class="hero-headline" id="heroHeadline">Where design meets discipline</h1>
+    <p class="hero-subline" id="heroSubline">The first luxury fitness bench designed to live in your home</p>
+    <a href="#" class="btn-primary" id="heroCta">Discover the collection</a>
+  </div>
+  <div class="hero-scroll-indicator" id="heroScroll">
+    <div class="line"></div>
+  </div>
+</section>
+
+<!-- ══════════ VALUE PROPOSITION ══════════ -->
+<section class="value-prop" id="valueProp">
+  <div class="container">
+    <div class="value-grid" id="valueGrid">
+      <div class="value-item">
+        <div class="value-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12L12 3l9 9"/><path d="M5 10v10h14V10"/>
+          </svg>
+        </div>
+        <h3>Furniture first</h3>
+        <p>Designed for your interior, not your garage. Premium vegan leather, brushed gold aluminium.</p>
+      </div>
+      <div class="value-item">
+        <div class="value-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8l-9-5-9 5v8l9 5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/>
+          </svg>
+        </div>
+        <h3>A complete studio</h3>
+        <p>300+ exercises concealed within a single compact volume. Resistance, Pilates, yoga, mobility.</p>
+      </div>
+      <div class="value-item">
+        <div class="value-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <h3>Your rhythm</h3>
+        <p>No setup, no clutter. Training integrates into your daily life with a single elegant gesture.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ HOW IT WORKS ══════════ -->
+<section class="how-it-works" id="howItWorks">
+  <div class="container">
+    <div class="how-header">
+      <h2 data-fx-split>Three gestures. Infinite possibilities</h2>
+    </div>
+    <div class="steps-grid" id="stepsGrid">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-visual"><div class="step-visual-inner">
+          <svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+        </div></div>
+        <h3>Open</h3>
+        <p>One gesture reveals everything you need</p>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-visual"><div class="step-visual-inner">
+          <svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        </div></div>
+        <h3>Train</h3>
+        <p>300+ exercises guided by the free app</p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-visual"><div class="step-visual-inner">
+          <svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M9 21H3v-6M15 3h6v6M3 21l7-7M21 3l-7 7"/></svg>
+        </div></div>
+        <h3>Close</h3>
+        <p>Everything disappears in one elegant gesture</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PRODUCT REVEAL ══════════ -->
+<section class="product-reveal" id="productReveal">
+  <div class="reveal-canvas-area">
+    <div class="reveal-product">
+      <div class="reveal-bench">
+        <div class="reveal-bench-lid" id="revealLid"></div>
+        <div class="reveal-bench-base"></div>
+        <div class="reveal-interior" id="revealInterior">
+          <div class="reveal-item"><div class="item-icon"></div>Dumbbells</div>
+          <div class="reveal-item"><div class="item-icon"></div>Bands</div>
+          <div class="reveal-item"><div class="item-icon"></div>Yoga mat</div>
+          <div class="reveal-item"><div class="item-icon"></div>Straps</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="reveal-text-panel">
+    <div class="reveal-phase" id="rPhase1">
+      <h3>Designed as furniture</h3>
+      <p>Premium vegan leather, brushed gold aluminium, integrated wheels. A design object that earns its place in your living room.</p>
+    </div>
+    <div class="reveal-phase" id="rPhase2">
+      <h3>Engineered for performance</h3>
+      <p>A patented opening mechanism reveals a complete training system. Resistance, Pilates, yoga — concealed within millimetric precision.</p>
+    </div>
+    <div class="reveal-phase" id="rPhase3">
+      <h3>A complete studio, revealed</h3>
+      <p>Everything you need for 300+ exercises. Nothing you don't. Designed to set up in seconds and disappear in one gesture.</p>
+    </div>
+  </div>
+  <div class="reveal-counter" id="revealCounter">
+    <div class="number" id="counterNumber">0</div>
+    <div class="label">exercises</div>
+  </div>
+  <div class="reveal-cta" id="revealCta">
+    <a href="#" class="btn-primary">Explore the full kit</a>
+  </div>
+</section>
+
+<!-- ══════════ CRAFTSMANSHIP (MATERIAL ZOOM) ══════════ -->
+<section class="craftsmanship" id="craftsmanship">
+  <div class="craft-image" id="craftImage"></div>
+  <div class="craft-text">
+    <div class="craft-phase" id="cPhase1"><h3>Craftsmanship you can feel</h3></div>
+    <div class="craft-phase" id="cPhase2"><h3>Premium vegan leather</h3><p>Selected for its texture and longevity</p></div>
+    <div class="craft-phase" id="cPhase3"><h3>Brushed gold aluminium</h3><p>Finished by hand in our South African atelier</p></div>
+    <div class="craft-phase" id="cPhase4"><h3>Every detail, intentional</h3></div>
+  </div>
+</section>
+
+<!-- ══════════ TESTIMONIALS ══════════ -->
+<section class="testimonials" id="testimonials">
+  <div class="container">
+    <div class="testimonial-quote">
+      <div class="testimonial-mark">"</div>
+      <p class="testimonial-text">It's the first piece of fitness equipment that actually makes my living room look better. My guests think it's a designer bench.</p>
+      <div class="testimonial-author">Camille D.</div>
+      <div class="testimonial-context">Marketing Director, Paris</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ COLLECTION SPLIT ══════════ -->
+<section class="collection-split" id="collectionSplit">
+  <div class="collection-side daybreak" id="daybreakSide">
+    <div class="collection-product"></div>
+    <div class="collection-name">Daybreak</div>
+    <div class="collection-tagline">Warm tones, natural elegance</div>
+    <a href="#" class="collection-cta">Discover Daybreak</a>
+  </div>
+  <div class="collection-divider"></div>
+  <div class="collection-side midnight" id="midnightSide">
+    <div class="collection-product"></div>
+    <div class="collection-name">Midnight</div>
+    <div class="collection-tagline">Dark elegance, bold statement</div>
+    <a href="#" class="collection-cta">Discover Midnight</a>
+  </div>
+</section>
+
+<!-- ══════════ APP SHOWCASE ══════════ -->
+<section class="app-showcase" id="appShowcase">
+  <div class="container">
+    <div class="app-grid">
+      <div class="app-mockup">
+        <div class="app-mockup-screen">
+          <div class="app-mockup-ui">
+            <div class="app-logo">FLEXBOX</div>
+            <div class="app-title">Today's workout</div>
+            <div class="app-subtitle">Full body • 35 min</div>
+            <div class="app-cards">
+              <div class="app-card-mini"><span>Resistance bands</span><span>12 min</span></div>
+              <div class="app-card-mini"><span>Dumbbell circuit</span><span>15 min</span></div>
+              <div class="app-card-mini"><span>Yoga cooldown</span><span>8 min</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="app-info">
+        <h2>Your personal trainer, included</h2>
+        <p>The free Flexbox app transforms your bench into a guided fitness experience. Over 100 exercise demonstrations, personalized programs, and regular updates.</p>
+        <div class="app-features">
+          <div class="app-feature">100+ exercises</div>
+          <div class="app-feature">Video demos</div>
+          <div class="app-feature">Custom programs</div>
+          <div class="app-feature">Free forever</div>
+        </div>
+        <div class="app-badges">
+          <div class="app-badge">App Store</div>
+          <div class="app-badge">Google Play</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ FINAL CTA ══════════ -->
+<section class="final-cta" id="finalCta">
+  <div class="container">
+    <div class="final-product-image"></div>
+    <h2>Begin your Flexbox experience</h2>
+    <p class="subline">An investment in your wellbeing, delivered to your door</p>
+    <a href="#" class="btn-primary">Discover the collection</a>
+    <div class="reassurance-badges">
+      <div class="badge-item">
+        <svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Careful delivery
+      </div>
+      <div class="badge-item">
+        <svg viewBox="0 0 24 24" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1014.85-3.36L23 6"/></svg>
+        30-day returns
+      </div>
+      <div class="badge-item">
+        <svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Warranty included
+      </div>
+      <div class="badge-item">
+        <svg viewBox="0 0 24 24" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Secure payment
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>Collection</h4>
+      <a href="#">Daybreak</a>
+      <a href="#">Midnight</a>
+      <a href="#">Compare kits</a>
+    </div>
+    <div class="footer-col">
+      <h4>Experience</h4>
+      <a href="#">How it works</a>
+      <a href="#">The app</a>
+      <a href="#">Exercises</a>
+    </div>
+    <div class="footer-col">
+      <h4>About</h4>
+      <a href="#">Our story</a>
+      <a href="#">Craftsmanship</a>
+      <a href="#">Journal</a>
+    </div>
+    <div class="footer-col">
+      <h4>Support</h4>
+      <a href="#">FAQ</a>
+      <a href="#">Shipping</a>
+      <a href="#">Returns</a>
+      <a href="#">Contact</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Flexbox. All rights reserved.</span>
+    <span>Designed in California. Made in South Africa.</span>
+  </div>
+</footer>
+
+<!-- ══════════════════════════════════════════
+     GSAP ANIMATIONS
+     ══════════════════════════════════════════ -->
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+// ── Reduced motion check ──
+const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (prefersReduced) {
+  document.querySelectorAll('.hero-curtain').forEach(el => el.style.clipPath = 'inset(0)');
+  document.querySelectorAll('[style*="opacity: 0"], .hero-headline, .hero-subline, .hero .btn-primary, .hero-scroll-indicator, .value-item, .step, .testimonial-quote, .app-mockup, .app-info, .final-product-image, .final-cta h2, .final-cta .subline, .final-cta .btn-primary, .badge-item')
+    .forEach(el => { el.style.opacity = '1'; el.style.transform = 'none'; });
+}
+
+if (!prefersReduced) {
+
+// ══════════ 1. HERO CINEMATIC SEQUENCE ══════════
+const SILK = 'cubic-bezier(0.25, 0.0, 0.15, 1.0)';
+const DRIFT = 'cubic-bezier(0.42, 0.0, 0.12, 1.0)';
+
+// Split headline into words
+const headline = document.getElementById('heroHeadline');
+headline.innerHTML = headline.textContent.split(' ').map(w => `<span class="word">${w}</span>`).join(' ');
+headline.style.opacity = '1';
+
+const heroTL = gsap.timeline({ delay: 0.2 });
+
+heroTL
+  .to('#heroLogo', { opacity: 1, scale: 1, duration: 0.7, ease: SILK })
+  .fromTo('#heroCurtain',
+    { clipPath: 'inset(0 50% 0 50%)' },
+    { clipPath: 'inset(0 0% 0 0%)', duration: 1.2, ease: DRIFT }, 0.8)
+  .to('#heroImageWrap', { scale: 1, duration: 1.2, ease: DRIFT }, 0.8)
+  .to('#heroLogo', { opacity: 0, duration: 0.4, ease: SILK }, 0.9)
+  .to('.hero-headline .word', {
+    opacity: 1, y: 0, stagger: 0.08, duration: 0.5, ease: SILK
+  }, 1.8)
+  .to('#heroSubline', { opacity: 0.85, y: 0, duration: 0.6, ease: SILK }, 2.6)
+  .fromTo('#heroCta', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: SILK }, 3.0)
+  .to('#heroScroll', { opacity: 1, duration: 0.4 }, 3.4);
+
+// Scroll indicator loop
+gsap.to('#heroScroll .line', {
+  y: 20, opacity: 0, duration: 1.8, ease: 'power1.inOut',
+  repeat: -1, repeatDelay: 0.3
+});
+
+// Hero parallax on scroll
+gsap.to('#heroImageWrap', {
+  scale: 1.12, ease: 'none',
+  scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 1 }
+});
+gsap.to('#heroOverlay', {
+  opacity: 0.6, ease: 'none',
+  scrollTrigger: { trigger: '.hero', start: '30% top', end: 'bottom top', scrub: 1 }
+});
+gsap.to('.hero-content', {
+  y: -80, opacity: 0, ease: 'none',
+  scrollTrigger: { trigger: '.hero', start: '20% top', end: '70% top', scrub: 1 }
+});
+
+// ══════════ 2. VALUE PROPOSITION ══════════
+gsap.from('.value-item', {
+  y: 32, opacity: 0, duration: 0.8, stagger: 0.12, ease: SILK,
+  scrollTrigger: { trigger: '#valueGrid', start: 'top 80%' }
+});
+
+// ══════════ 3. HOW IT WORKS ══════════
+gsap.from('.step', {
+  y: 32, opacity: 0, duration: 0.8, stagger: 0.15, ease: SILK,
+  scrollTrigger: { trigger: '#stepsGrid', start: 'top 80%' }
+});
+
+// ══════════ 4. PRODUCT REVEAL (PINNED) ══════════
+const revealTL = gsap.timeline({
+  scrollTrigger: {
+    trigger: '#productReveal',
+    start: 'top top',
+    end: '+=300%',
+    pin: true,
+    scrub: 0.8,
+    anticipatePin: 1,
+  }
+});
+
+// Phase 1: Show furniture (0-20%)
+revealTL
+  .to('#rPhase1', { opacity: 1, duration: 0.5 }, 0)
+  // Phase 2: Open lid (20-50%)
+  .to('#rPhase1', { opacity: 0, duration: 0.3 }, 1)
+  .to('#rPhase2', { opacity: 1, duration: 0.5 }, 1.2)
+  .to('#revealLid', { rotateX: -110, y: -40, opacity: 0.3, duration: 2, ease: 'none' }, 0.8)
+  .to('#revealInterior', { opacity: 1, duration: 1 }, 1.5)
+  // Phase 3: Reveal complete (50-70%)
+  .to('#rPhase2', { opacity: 0, duration: 0.3 }, 2.5)
+  .to('#rPhase3', { opacity: 1, duration: 0.5 }, 2.8)
+  // Items appear (70-90%)
+  .to('.reveal-item', {
+    opacity: 1, y: 0, stagger: 0.15, duration: 0.5, ease: SILK
+  }, 3)
+  .to('#rPhase3', { opacity: 0, duration: 0.3 }, 3.8)
+  // Counter + CTA (90-100%)
+  .to('#revealCounter', { opacity: 1, duration: 0.3 }, 4)
+  .to('#revealCta', { opacity: 1, duration: 0.3 }, 4.5);
+
+// Counter animation triggered by scroll
+let counterDone = false;
+ScrollTrigger.create({
+  trigger: '#productReveal',
+  start: 'top top',
+  end: '+=300%',
+  onUpdate: (self) => {
+    if (self.progress >= 0.88 && !counterDone) {
+      counterDone = true;
+      gsap.to({ val: 0 }, {
+        val: 300, duration: 2, ease: 'power2.out',
+        onUpdate: function() {
+          document.getElementById('counterNumber').textContent = Math.round(this.targets()[0].val) + '+';
+        }
+      });
+    }
+    if (self.progress < 0.85) counterDone = false;
+  }
+});
+
+// Background transition during reveal
+gsap.to('#productReveal', {
+  backgroundColor: '#efe7da', ease: 'none',
+  scrollTrigger: { trigger: '#productReveal', start: 'top top', end: '+=150%', scrub: 1 }
+});
+
+// ══════════ 5. CRAFTSMANSHIP (MATERIAL ZOOM PINNED) ══════════
+const craftTL = gsap.timeline({
+  scrollTrigger: {
+    trigger: '#craftsmanship',
+    start: 'top top',
+    end: '+=350%',
+    pin: true,
+    scrub: 0.5,
+  }
+});
+
+craftTL
+  .to('#cPhase1', { opacity: 1, duration: 0.5 }, 0)
+  .to('#craftImage', { scale: 1.5, duration: 2, ease: 'none' }, 0)
+  .to('#cPhase1', { opacity: 0, duration: 0.3 }, 1)
+  .to('#cPhase2', { opacity: 1, duration: 0.5 }, 1.2)
+  .to('#craftImage', { scale: 2.2, duration: 2, ease: 'none' }, 1.2)
+  .to('#cPhase2', { opacity: 0, duration: 0.3 }, 2.2)
+  .to('#cPhase3', { opacity: 1, duration: 0.5 }, 2.5)
+  .to('#cPhase3', { opacity: 0, duration: 0.3 }, 3.2)
+  .to('#cPhase4', { opacity: 1, duration: 0.5 }, 3.5)
+  .to('#craftImage', { scale: 1, duration: 1.5, ease: DRIFT }, 3.5);
+
+// ══════════ 6. TESTIMONIALS ══════════
+gsap.from('.testimonial-quote', {
+  y: 24, opacity: 0, duration: 1, ease: SILK,
+  scrollTrigger: { trigger: '#testimonials', start: 'top 75%' }
+});
+
+// ══════════ 7. COLLECTION SPLIT ══════════
+const daybreak = document.getElementById('daybreakSide');
+const midnight = document.getElementById('midnightSide');
+
+daybreak.addEventListener('mouseenter', () => {
+  gsap.to(daybreak, { flex: 1.8, duration: 0.5, ease: 'cubic-bezier(0.22,0.61,0.36,1)' });
+  gsap.to(midnight, { flex: 1, duration: 0.5, ease: 'cubic-bezier(0.22,0.61,0.36,1)' });
+  gsap.to('.daybreak .collection-product', { scale: 1.03, duration: 0.5 });
+  gsap.to('.midnight .collection-name, .midnight .collection-tagline', { opacity: 0.5, duration: 0.3 });
+});
+midnight.addEventListener('mouseenter', () => {
+  gsap.to(midnight, { flex: 1.8, duration: 0.5, ease: 'cubic-bezier(0.22,0.61,0.36,1)' });
+  gsap.to(daybreak, { flex: 1, duration: 0.5, ease: 'cubic-bezier(0.22,0.61,0.36,1)' });
+  gsap.to('.midnight .collection-product', { scale: 1.03, duration: 0.5 });
+  gsap.to('.daybreak .collection-name, .daybreak .collection-tagline', { opacity: 0.5, duration: 0.3 });
+});
+document.querySelector('.collection-split').addEventListener('mouseleave', () => {
+  gsap.to([daybreak, midnight], { flex: 1, duration: 0.5, ease: 'cubic-bezier(0.22,0.61,0.36,1)' });
+  gsap.to('.collection-product', { scale: 1, duration: 0.5 });
+  gsap.to('.collection-name, .collection-tagline', { opacity: 1, duration: 0.3 });
+});
+
+// ══════════ 8. APP SHOWCASE ══════════
+gsap.from('.app-mockup', {
+  y: 40, opacity: 0, duration: 1, ease: SILK,
+  scrollTrigger: { trigger: '#appShowcase', start: 'top 70%' }
+});
+gsap.from('.app-info', {
+  y: 32, opacity: 0, duration: 0.8, ease: SILK,
+  scrollTrigger: { trigger: '.app-info', start: 'top 80%' }
+});
+
+// ══════════ 9. FINAL CTA ══════════
+gsap.from('.final-product-image', {
+  scale: 1.05, opacity: 0, duration: 1, ease: SILK,
+  scrollTrigger: { trigger: '#finalCta', start: 'top 75%' }
+});
+gsap.from('#finalCta h2', {
+  y: 20, opacity: 0, duration: 0.8, ease: SILK,
+  scrollTrigger: { trigger: '#finalCta h2', start: 'top 85%' }
+});
+gsap.from('#finalCta .subline', {
+  y: 16, opacity: 0, duration: 0.8, ease: SILK,
+  scrollTrigger: { trigger: '#finalCta .subline', start: 'top 85%' }
+});
+gsap.from('#finalCta .btn-primary', {
+  y: 12, opacity: 0, duration: 0.6, ease: SILK,
+  scrollTrigger: { trigger: '#finalCta .btn-primary', start: 'top 90%' }
+});
+gsap.from('.badge-item', {
+  y: 12, opacity: 0, stagger: 0.1, duration: 0.6, ease: SILK,
+  scrollTrigger: { trigger: '.reassurance-badges', start: 'top 90%' }
+});
+
+} // end if (!prefersReduced)
+
+// ══════════ NAV SCROLL BEHAVIOR ══════════
+ScrollTrigger.create({
+  start: 'top -80',
+  onUpdate: (self) => {
+    document.getElementById('nav').classList.toggle('scrolled', self.progress > 0);
+  }
+});
+
+// ══════════ PROGRESS INDICATOR ══════════
+const sections = ['hero', 'valueProp', 'howItWorks', 'productReveal', 'craftsmanship', 'collectionSplit'];
+sections.forEach((id, i) => {
+  ScrollTrigger.create({
+    trigger: `#${id}`,
+    start: 'top center',
+    end: 'bottom center',
+    onEnter: () => updateProgress(i),
+    onEnterBack: () => updateProgress(i),
+  });
+});
+
+function updateProgress(index) {
+  document.querySelectorAll('.progress-dot').forEach((dot, i) => {
+    dot.classList.toggle('active', i === index);
+  });
+}
+
+document.querySelectorAll('.progress-dot').forEach(dot => {
+  dot.addEventListener('click', () => {
+    const idx = parseInt(dot.dataset.section);
+    const target = document.getElementById(sections[idx]);
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+</script>
+
+</body>
+</html>
